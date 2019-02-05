@@ -43,7 +43,6 @@ def plot(data, x_line=None, y_line=None, name=None, w_slope=None, w_intercept=No
     plt.xlim((-1.1, 1.1))
     plt.ylim((-1.1, 1.1))
     plt.savefig(name + ".png", dpi=100)
-    plt.show()
 
 
 def generate_target():
@@ -107,7 +106,6 @@ def train():
 
 def test():
     err = 0
-
     for point in testing_data:
         if hypothesis(point) != target(point):
             err += 1
@@ -118,7 +116,7 @@ def test():
 # In[ ]:
 
 # question 7
-runs = 10
+runs = 1000
 data_size = 10
 repeats = 0
 
@@ -126,13 +124,32 @@ for i in range(runs):
     x1, y1, slope = generate_target()
     training_data, testing_data = create_data(size=data_size, in_sample=True)
 
-    plot(data=training_data, name="target-" + str(i))
+    # plot(data=training_data, name="target-" + str(i))
     w = np.array([[0.,0.,0.]]).T
     repeat = train()
     repeats += repeat
     slope_w = -(w[1] / w[2])
     intercept_w = -(w[0] / w[2])
 
-    plot(data=training_data, name="trained-" + str(i), w_slope=slope_w, w_intercept=intercept_w)
+    # plot(data=training_data, name="trained-" + str(i), w_slope=slope_w, w_intercept=intercept_w)
 
 print("number of repeats: " + str(repeats / float(runs)))
+
+# problem8
+runs = 1000
+
+for i in range(runs):
+    x1, y1, slope = generate_target()
+    training_data, testing_data = create_data(size=data_size, in_sample=False)
+
+    plot(data=training_data, name="target-" + str(i))
+    w = np.array([[0.,0.,0.]]).T
+    global error
+    error = 0
+    train()
+    error += test()
+    slope_w = -(w[1] / w[2])
+    intercept_w = -(w[0] / w[2])
+
+    plot(data=testing_data, name="test-" + str(i), w_slope=slope_w, w_intercept=intercept_w)
+print("the E_{out} is " + str(error))
