@@ -10,7 +10,7 @@ import seaborn as sns
 import pandas as pd
 
 
-# In[47]:
+# In[70]:
 
 class Regularization:
     def __init__(self, X_train,y_train,X_test = None,y_test = None,w_vect = None):
@@ -34,12 +34,23 @@ class Regularization:
             arr.append([1,x1,x2,x1**2,x2**2,x1*x2,np.abs(x1-x2),np.abs(x1+x2)])
         return arr
     
-    def lr_train(self):
+    def lr_train(self,k = None):
         y_vect = np.array([self.y_train]).T
 
         self.Z_train = self.transform(self.X_train)
         self.w_vect = np.dot(np.linalg.pinv(self.Z_train),y_vect)
+        
+        # add regularization (weight decay)
+        if k is not None:
+            lmbda = 10**(k)
+            w_sqrd = (np.linalg.norm(self.w_vect))**2
+            N = len(y_vect)
+            decay = (lmbda / float(N)) * w_sqrd 
             
+            regularization = np.linalg.pinv(self.Z_train + decay)
+            self.w_vect = np.dot(regularization, y_vect)
+
+             
     def test(self):
         error = 0
         self.Z_test = self.transform(self.X_test)
@@ -51,7 +62,7 @@ class Regularization:
                 error += 1
         return error
         
-def run(e_in=False):
+def run(e_in=False,k=None):
     
     # load training and testing data
     df1 = pd.read_table("in.dta.txt",delim_whitespace=True,header=None)
@@ -71,7 +82,7 @@ def run(e_in=False):
         
     reg = Regularization(X_train,y_train,X_test,y_test)
     
-    reg.lr_train()
+    reg.lr_train(k=k)
     error = reg.test()
     
     return error / float(len(X_test))
@@ -79,6 +90,15 @@ def run(e_in=False):
 if __name__ == "__main__":
     print(run(True)) # returns 0.0294 
     print(run(False)) # returns 0.0803 closest is 0.08
+    
+    print(run(True,k = -3)) # returns 0.0294
+    print(run(False,k = -3)) # returns 0.0803 so have the same results
+    
+    print(run(True,k = 3)) # returns 0.5588
+    print(run(False, k = 3)) # returns 0.5301
+    
+    print(run(True, k =-1), run(False, k = -1)) # this gives the smallest error E_out = 0.05622
+    
 
 
 # In[ ]:
