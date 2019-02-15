@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[9]:
 
 import numpy as np
 import random
@@ -10,7 +10,7 @@ import seaborn as sns
 import pandas as pd
 
 
-# In[98]:
+# In[47]:
 
 class Regularization:
     def __init__(self, X_train,y_train,X_test = None,y_test = None,w_vect = None):
@@ -19,43 +19,39 @@ class Regularization:
         self.X_test = X_test
         self.y_test = y_test
         
+        # in the non-linear case, will define Z_mat
+        self.Z_mat = None
+        
         if w_vect is None:
-            w_vect = np.array([0.,0.,0.])
+            w_vect = np.array([0.,0.,0.]).T
         else: 
             w_vect = w_vect
     
-    def hypothesis(self,point):
-        return np.sign(np.dot(point,self.w_vect))
+    def transform(self,data_set):
+        arr = []
+        for point in data_set:
+            x1,x2 = point[1],point[2]
+            arr.append([1,x1,x2,x1**2,x2**2,x1*x2,np.abs(x1-x2),np.abs(x1+x2)])
+        return arr
     
-    def transform(self,point):
-        x1,x2 = point[1],point[2]
-        return 1,x1,x2,x1**2,x2**2,x1*x2,np.abs(x1-x2),np.abs(x1+x2)
-    
-    def lr_train(self,non_linear = False):
-        # y same for both cases
-        y_vect = np.array([y_train]).T
-        print(y_vect)
-        if not non_linear:
-            X_mat = np.array(X_train)
-            self.w_vect = np.dot(np.linalg.pinv(X_mat),y_vect)
-        else:
-            Z_mat = np.array([self.transform(point) for point in X_train])
-            print(Z_mat)
-            self.w_vect = np.dot(np.linalg.pinv(Z_mat),y_vect)
+    def lr_train(self):
+        y_vect = np.array([self.y_train]).T
+
+        self.Z_train = self.transform(self.X_train)
+        self.w_vect = np.dot(np.linalg.pinv(self.Z_train),y_vect)
             
-    def test(self,non_linear = False):
-        if not non_linear:
-            y_pred = [np.dot(point,self.w_vect) for point in X_test]
-        else:
-            # rewrite code to define Z_mat
-            y_pred = [np.dot(point, self.w_vect) for point in Z_mat]
+    def test(self):
+        error = 0
+        self.Z_test = self.transform(self.X_test)
+        y_pred = np.sign(np.dot(self.Z_test, self.w_vect))
 
         # count all different members
-        error = np.sum(y_pred != y_test)
+        for i in range(len(y_pred)):
+            if y_pred[i] != self.y_test[i]:
+                error += 1
+        return error
         
-        return error / float(len(y_test))
-        
-def run(e_in=False,non_linear = False):
+def run(e_in=False):
     
     # load training and testing data
     df1 = pd.read_table("in.dta.txt",delim_whitespace=True,header=None)
@@ -67,21 +63,22 @@ def run(e_in=False,non_linear = False):
         # load testing data
         X_test = [[1,df2[1][i],df2[0][i]] for i in range(len(df2)-1)]
         y_test = [df2[2][i] for i in range(len(df2)-1)]
+        
     else:
         # training data is used for testing
         X_test = X_train
         y_test = y_train
         
-    lr = Regularization(X_train,y_train)
+    reg = Regularization(X_train,y_train,X_test,y_test)
     
-    lr.lr_train(non_linear)
-    error = lr.test(non_linear)
+    reg.lr_train()
+    error = reg.test()
     
-    return error
+    return error / float(len(X_test))
         
 if __name__ == "__main__":
-    print(run(True,True)) # returns 0.004 
-    print(run(False,True))
+    print(run(True)) # returns 0.0294 
+    print(run(False)) # returns 0.0803 closest is 0.08
 
 
 # In[ ]:
