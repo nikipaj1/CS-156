@@ -3,6 +3,8 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 from sklearn.svm import SVC
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedKFold
 
 def one_vs_rest(choice, y_vector):
     target = []    
@@ -29,23 +31,6 @@ def one_vs_one(choice_pos,choice_neg, y_vector, X_vector):
     
     return np.array(X), np.array(y)
 
-# reading data
-df_train = pd.read_csv("features.train.txt", delim_whitespace = True,names=['y','x1','x2'])
-df_test = pd.read_csv('features.test.txt', delim_whitespace=True,names=['y','x1','x2'])
-
-# visualize the digits
-sns.lmplot('x1','x2',hue='y', data=df_train,fit_reg=False)
-plt.xlabel('feature 1')
-plt.ylabel('feature 2')
-plt.title('scatterplot for digits')
-plt.savefig('numbers.png', dpi=2000)
-
-
-X_train = df_train[['x1','x2']].values
-y_train = df_train['y'].values
-X_test = df_test[['x1','x2']].values
-y_test = df_test['y'].values
-
 
 def question2_3(checks):
     errors_in = []
@@ -61,7 +46,7 @@ def question2_3(checks):
     return errors_in
 
 
-def question5(C, first = 5,second = 6):
+def question56(C, first = 5,second = 6):
     errors_in = []
     errors_out = []
     for c in C:
@@ -80,7 +65,53 @@ def question5(C, first = 5,second = 6):
     
     return errors_in, errors_out
 
+def question7_8(C = [0.0001,0.001,0.01,0.1,1], first = 1, second = 5):
+    errors = []
+    temp = []
+    for c in C:
+       errors.append([c,0,0])
+    
+    X_tr,y_tr = one_vs_one(first, second, y_train ,X_train)
+    rkf = RepeatedKFold(n_splits = 10, n_repeats=100)
+    
+    for train_index, test_index in rkf.split(X_tr):
+        X_training, X_testing = X_tr[train_index], X_tr[test_index]
+        y_training, y_testing = y_tr[train_index], y_tr[test_index]
+        for c in errors:
+            model = SVC(C=c[0], kernel='poly',degree=2,coef0=1,gamma='auto')
+            model.fit(X_training, y_training)
+            prediction_test = model.predict(X_testing)
+
+            error_xval = len(prediction_test[prediction_test != y_testing]) / (len(y_testing)* 100)
+            
+            c[1] += error_xval
+            temp.append(error_xval)
+
+        min_index = temp.index(min(temp))
+        temp = []
+        errors[min_index][2] += 1   
+            
+    return errors
+ 
 if __name__ == '__main__':
+    
+    # reading data
+    df_train = pd.read_csv("features.train.txt", delim_whitespace = True,names=['y','x1','x2'])
+    df_test = pd.read_csv('features.test.txt', delim_whitespace=True,names=['y','x1','x2'])
+    
+    # visualize the digits
+    sns.lmplot('x1','x2',hue='y', data=df_train,fit_reg=False,markers='x')
+    plt.xlabel('feature 1')
+    plt.ylabel('feature 2')
+    plt.title('scatterplot for digits')
+    plt.savefig('numbers.png', dpi=500)
+    
+    # training and testing data
+    X_train = df_train[['x1','x2']].values
+    y_train = df_train['y'].values
+    X_test = df_test[['x1','x2']].values
+    y_test = df_test['y'].values
+    
     checks = [0,2,4,6,8]
     print("results for question 2: " + str(question2_3(checks)))
     print('\n')
@@ -89,4 +120,15 @@ if __name__ == '__main__':
 
     print('\n')
     C = [0.001,0.01,0.1,1]
-    print("results for question 5,6: " + str(question5(C=C)))
+    print("results for question 5: " + str(question56(C=C)))
+    print('\n')
+    C = [0.0001,0.001,0.01,1]
+    print('results for question 6: ' + str(question56(C=C,first=2,second=5)) + '\n')
+    
+    print(question7_8())
+    # most frequent C used is 0.001 with the closest error to 
+    
+    
+    
+    
+    
